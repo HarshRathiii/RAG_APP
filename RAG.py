@@ -1,7 +1,5 @@
 
-import os
-from dotenv import load_dotenv
-load_dotenv()
+
 os.environ['groq_api_key'] = os.secrets('groq_api_key')
 os.environ['LANGSMITH_API_KEY'] = os.secrets('LANGSMITH_API_KEY')
 os.environ['LANGSMITH_PROJECT'] = os.secrets('LANGSMITH_PROJECT')
@@ -155,3 +153,4 @@ if user_input:
 
         elif isinstance(event, HumanMessage):
             st.chat_message("user").write(event.content)
+
