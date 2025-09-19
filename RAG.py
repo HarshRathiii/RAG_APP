@@ -5,7 +5,7 @@ os.environ['GROQ_API_KEY'] = st.secrets['GROQ_API_KEY']
 os.environ['LANGSMITH_API_KEY'] = st.secrets['LANGSMITH_API_KEY']
 os.environ['LANGSMITH_PROJECT'] = st.secrets['LANGSMITH_PROJECT']
 os.environ['LANGSMITH_TRACING'] = "true"
-from pinecone import Pinecone
+from pinecone import Pinecone, ServerlessSpec
 pc = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
 
 import streamlit as st
@@ -174,6 +174,7 @@ if user_input:
 
         elif isinstance(event, HumanMessage):
             st.chat_message("user").write(event.content)
+
 
 
 
