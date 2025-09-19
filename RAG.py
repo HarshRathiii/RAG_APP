@@ -13,6 +13,8 @@ from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_pinecone import PineconeVectorStore
+
 
 st.set_page_config(page_title="PDF & Webpage Vectorizer", layout="centered")
 st.title("📄🔗 Multi PDF & Webpage Vectorizer")
@@ -174,6 +176,7 @@ if user_input:
 
         elif isinstance(event, HumanMessage):
             st.chat_message("user").write(event.content)
+
 
 
 
