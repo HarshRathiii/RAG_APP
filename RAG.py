@@ -54,8 +54,7 @@ for doc in all_docs:
 st.write(f"🔹 Total chunks 5: {len(all_chunks)}")
 
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2",model_kwargs={"device": "cpu"}) 
-vectorstore = Chroma.from_texts(all_chunks, embeddings, persist_directory="chroma_db")
-vectorstore.persist()
+vectorstore = Chroma.from_texts(all_chunks, embeddings)
 st.success("✅ All chunks converted into embeddings and stored in Chroma DB")
 
 
@@ -154,6 +153,7 @@ if user_input:
 
         elif isinstance(event, HumanMessage):
             st.chat_message("user").write(event.content)
+
 
 
 
