@@ -1,7 +1,7 @@
 langchain
 ipykernel
 python-dotenv
-langchain[groq]
+langchain-groq
 langchain-community
 langgraph
 streamlit
@@ -13,3 +13,4 @@ sentence-transformers
 chromadb
 gTTS
 bs4
+
