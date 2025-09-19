@@ -5,6 +5,8 @@ os.environ['GROQ_API_KEY'] = st.secrets['GROQ_API_KEY']
 os.environ['LANGSMITH_API_KEY'] = st.secrets['LANGSMITH_API_KEY']
 os.environ['LANGSMITH_PROJECT'] = st.secrets['LANGSMITH_PROJECT']
 os.environ['LANGSMITH_TRACING'] = "true"
+from pinecone import Pinecone
+pc = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
 
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
@@ -54,8 +56,27 @@ for doc in all_docs:
 st.write(f"🔹 Total chunks 5: {len(all_chunks)}")
 
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2",model_kwargs={"device": "cpu"}) 
-vectorstore = Chroma.from_texts(all_chunks, embeddings)
-st.success("✅ All chunks converted into embeddings and stored in Chroma DB")
+# Create or connect to an index
+index_name = "rag-app-index"
+if index_name not in pc.list_indexes().names():
+    pc.create_index(
+        name=index_name,
+        dimension=384,  # embedding size for MiniLM-L6-v2
+        metric="cosine",
+        spec=ServerlessSpec(cloud="aws", region=st.secrets["PINECONE_ENVIRONMENT"])
+    )
+
+# Use the index
+index = pc.Index(index_name)
+
+# Store your embeddings in Pinecone
+vectorstore = PineconeVectorStore.from_texts(
+    texts=all_chunks,
+    embedding=embeddings,
+    index_name=index_name
+)
+
+st.success("✅ All chunks converted into embeddings and stored in Pinecone")
 
 
 
@@ -153,6 +174,7 @@ if user_input:
 
         elif isinstance(event, HumanMessage):
             st.chat_message("user").write(event.content)
+
 
 
 
