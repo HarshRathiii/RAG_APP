@@ -16,7 +16,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
 
 
-st.set_page_config(page_title="PDF & Webpage Vectorizer", layout="centered")
+st.set_page_config(page_title="PDF & Webpage Q&A", layout="centered")
 st.title("📄🔗 Multi PDF & Webpage Vectorizer")
 
 # Step 1: Upload multiple PDFs
@@ -101,8 +101,16 @@ llm = init_chat_model("openai/gpt-oss-120b", model_provider="groq")
 retriever = vectorstore.as_retriever()
 
 contextualize_q_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant. Reformulate user questions to be self-contained "
-               "and provide context if needed, based on chat history."),
+    ("system", """You are a grounded RAG assistant. Answer strictly using the provided context from the uploaded PDFs or websites. Always cite the source IDs like [S#] when giving information. 
+
+Rules:
+1. Only use the retrieved context to answer. Do not invent or assume facts. 
+2. If the answer is not fully supported by the context, say: "I don’t have enough information in the uploaded documents to answer that." Then offer to search more uploaded files or run a generic web search only if allowed. 
+3. Never contradict the sources. If they disagree, summarise both sides and cite them. 
+4. Stay strictly on the topic of the uploaded content. If the user asks something unrelated, refuse and say it’s out of scope, unless generic search is explicitly enabled. 
+5. Be concise, accurate, and neutral. If listing steps or details, use short bullet points. 
+
+If context is missing or insufficient then provide profound information"""),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}")
 ])
@@ -176,6 +184,7 @@ if user_input:
 
         elif isinstance(event, HumanMessage):
             st.chat_message("user").write(event.content)
+
 
 
 
