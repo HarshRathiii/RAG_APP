@@ -13,8 +13,9 @@ sentence-transformers
 chromadb
 gTTS
 bs4
-pinecone-client
+pinecone
 langchain-pinecone
+
 
 
 
