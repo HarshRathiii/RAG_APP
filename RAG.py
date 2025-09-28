@@ -101,16 +101,15 @@ llm = init_chat_model("openai/gpt-oss-120b", model_provider="groq")
 retriever = vectorstore.as_retriever()
 
 contextualize_q_prompt = ChatPromptTemplate.from_messages([
-    ("system", """You are a grounded RAG assistant. Answer strictly using the provided context from the uploaded PDFs or websites. Always cite the source IDs like [S#] when giving information. 
-
+    ("system", """You are a query rewriter for a Retrieval-Augmented Generation (RAG) system. 
+Your task is NOT to answer the question. 
+Instead, take the latest user message and the conversation history, and rephrase it into a single, self-contained query that is clear, explicit, and unambiguous. 
 Rules:
-1. Only use the retrieved context to answer. Do not invent or assume facts. 
-2. If the answer is not fully supported by the context, say: "I don’t have enough information in the uploaded documents to answer that." Then offer to search more uploaded files or run a generic web search only if allowed. 
-3. Never contradict the sources. If they disagree, summarise both sides and cite them. 
-4. Stay strictly on the topic of the uploaded content. If the user asks something unrelated, refuse and say it’s out of scope, unless generic search is explicitly enabled. 
-5. Be concise, accurate, and neutral. If listing steps or details, use short bullet points. 
-
-If context is missing or insufficient then provide profound information"""),
+- Resolve pronouns and references from the history (e.g., "this", "that", "they") into concrete terms. 
+- Keep the meaning, constraints, and entities intact. 
+- Use context from the retrieved documents only to align terminology, not to answer. 
+- Do not add new information or make assumptions. 
+- Output only the rewritten query, nothing else."""),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}")
 ])
@@ -125,7 +124,16 @@ history_aware_retriever = create_history_aware_retriever(
 # 4. Prompt to answer questions
 # ------------------------
 qa_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are an AI assistant. Use the retrieved context to answer the user's question.5"),
+    ("system", """You are a grounded RAG assistant. Answer strictly using the provided context from the uploaded PDFs or websites. Always cite the source IDs like [S#] when giving information. 
+
+Rules:
+1. Only use the retrieved context to answer. Do not invent or assume facts. 
+2. If the answer is not fully supported by the context, say: "I don’t have enough information in the uploaded documents to answer that." Then offer to search more uploaded files or run a generic web search only if allowed. 
+3. Never contradict the sources. If they disagree, summarise both sides and cite them. 
+4. Stay strictly on the topic of the uploaded content. If the user asks something unrelated, refuse and say it’s out of scope, unless generic search is explicitly enabled. 
+5. Be concise, accurate, and neutral. If listing steps or details, use short bullet points. 
+
+If context is missing or insufficient then provide profound information"""),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}"),
     ("system", "Context:\n{context}")
@@ -184,6 +192,7 @@ if user_input:
 
         elif isinstance(event, HumanMessage):
             st.chat_message("user").write(event.content)
+
 
 
 
