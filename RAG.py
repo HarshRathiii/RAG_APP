@@ -220,36 +220,39 @@ app = workflow.compile(checkpointer=memory)
 if "thread_id" not in st.session_state:
     st.session_state["thread_id"] = "chat1"  # unique per user/session
 
+# Always define events so NameError never happens
 events = None
 
 user_input = st.chat_input("Ask a question...")
 if user_input:
+    # Invoke the agentic RAG app
     events = app.invoke(
         {"messages": [("user", user_input)]},
         config={"configurable": {"thread_id": st.session_state["thread_id"]}}
     )
 
-if events:
+# Only loop if we actually have events
+if events is not None:
     for event in events["messages"]:
+        # Show user messages
         if isinstance(event, HumanMessage):
-            # Show user messages
             text = (event.content or "").strip()
             if text:
                 st.chat_message("user").write(text)
-    
+
+        # Show assistant messages + TTS
         elif isinstance(event, AIMessage):
             # Skip tool-call messages (no user-facing text)
             if getattr(event, "tool_calls", None):
                 continue
-    
+
             text = (event.content or "").strip()
             if not text:
-                # Nothing to speak or show
-                continue
-    
-            # Show assistant message
+                continue  # nothing to show or speak
+
+            # Show assistant response
             st.chat_message("assistant").write(text)
-    
+
             # Convert only non-empty text to speech
             tts = gTTS(text, lang="en")
             tts.save("output.mp3")
