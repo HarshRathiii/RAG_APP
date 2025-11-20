@@ -220,7 +220,7 @@ app = workflow.compile(checkpointer=memory)
 if "thread_id" not in st.session_state:
     st.session_state["thread_id"] = "chat1"  # unique per user/session
 
-
+events = None
 
 user_input = st.chat_input("Ask a question...")
 if user_input:
@@ -253,6 +253,7 @@ if user_input:
             tts = gTTS(text, lang="en")
             tts.save("output.mp3")
             st.audio("output.mp3", format="audio/mp3")
+
 
 
 
