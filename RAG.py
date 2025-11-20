@@ -149,25 +149,69 @@ rag_chain = create_retrieval_chain(
     combine_docs_chain=question_answer_chain
 )
 
-# 5. LangGraph wrapper to manage history
+from langchain_core.tools import tool
+
 # ------------------------
-def call_rag_chain(state: MessagesState):
-    user_input = state["messages"][-1].content
-    response = rag_chain.invoke({
-        "input": user_input,
-        "chat_history": state["messages"]
-    })
-    return {"messages": [("ai", response["answer"])]}
+# 5. Wrap RAG as a TOOL
+# ------------------------
+@tool
+def rag_tool(question: str) -> str:
+    """Use the RAG pipeline (PDF + Web vector store) to answer a question."""
+    response = rag_chain.invoke(
+        {
+            "input": question,
+            # you can later pass history if you want:
+            "chat_history": []
+        }
+    )
+    return response["answer"]
 
-# Define the graph
+tools = [rag_tool]
+tool_node = ToolNode(tools)
+
+# Bind tools to the LLM so it can decide when to call them
+llm_with_tools = llm.bind_tools(tools)
+
+# ------------------------
+# 6. Agent node: decides what to do next
+# ------------------------
+def agent_node(state: MessagesState):
+    """
+    Take the conversation so far, let the LLM decide:
+    - respond directly, or
+    - call a tool like rag_tool and keep the answer concise
+    """
+    messages = state["messages"]
+    result = llm_with_tools.invoke(messages)
+    # result can be an AIMessage or a tool call
+    return {"messages": [result]}
+
+# ------------------------
+# 7. Build LangGraph with Agent + Tools
+# ------------------------
 workflow = StateGraph(MessagesState)
-workflow.add_node("rag", call_rag_chain)
-workflow.add_edge(START, "rag")
-workflow.add_edge("rag", END)
 
-# Add memory (history storage)
+workflow.add_node("agent", agent_node)
+workflow.add_node("tools", tool_node)
+
+# Start → agent
+workflow.add_edge(START, "agent")
+
+# Agent can either:
+# - go to tools (if it requested a tool call), or
+# - end (if it just answered)
+workflow.add_conditional_edges(
+    "agent",
+    tools_condition,  # prebuilt helper from langgraph.prebuilt
+)
+
+# After tools run, go back to the agent
+workflow.add_edge("tools", "agent")
+
+# Memory for multi-turn chat
 memory = MemorySaver()
 app = workflow.compile(checkpointer=memory)
+
 
 
 if "thread_id" not in st.session_state:
@@ -181,17 +225,31 @@ if user_input:
     )
 
 
-    for event in events["messages"]:
-        if isinstance(event, AIMessage):
-            st.chat_message("assistant").write(event.content)
+for event in events["messages"]:
+    if isinstance(event, HumanMessage):
+        # Show user messages
+        text = (event.content or "").strip()
+        if text:
+            st.chat_message("user").write(text)
 
-            # --- NEW: Convert to speech ---
-            tts = gTTS(event.content, lang="en")
-            tts.save("output.mp3")
-            st.audio("output.mp3", format="audio/mp3")
+    elif isinstance(event, AIMessage):
+        # Skip tool-call messages (no user-facing text)
+        if getattr(event, "tool_calls", None):
+            continue
 
-        elif isinstance(event, HumanMessage):
-            st.chat_message("user").write(event.content)
+        text = (event.content or "").strip()
+        if not text:
+            # Nothing to speak or show
+            continue
+
+        # Show assistant message
+        st.chat_message("assistant").write(text)
+
+        # Convert only non-empty text to speech
+        tts = gTTS(text, lang="en")
+        tts.save("output.mp3")
+        st.audio("output.mp3", format="audio/mp3")
+
 
 
 
