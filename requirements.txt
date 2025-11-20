@@ -1,17 +1,25 @@
-langchain
-ipykernel
-langchain-groq
-langchain-community
-langgraph
 streamlit
-langchain-text-splitters
-faiss-cpu 
-pypdf
-langchain[huggingface]
+ipykernel
+
+# LangChain ecosystem (0.2.x style)
+langchain==0.2.11
+langchain-core==0.2.33
+langchain-community==0.2.11
+langchain-text-splitters==0.2.1
+langchain-pinecone==0.1.0
+langchain-groq==0.1.0
+langgraph==0.2.0
+
+# Embeddings / vector / docs
 sentence-transformers
 chromadb
-gTTS
+faiss-cpu
+pypdf
 bs4
-pinecone
-langchain-pinecone
-langchain-core
+
+# Pinecone new client (for from pinecone import Pinecone)
+pinecone-client
+
+# Other
+gTTS
+
