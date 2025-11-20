@@ -85,8 +85,8 @@ st.success("✅ All chunks converted into embeddings and stored in Pinecone")
 import os
 import streamlit as st
 from langchain_groq import ChatGroq
-from langchain.chains import create_history_aware_retriever, create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_classic.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, START, END, StateGraph
@@ -248,6 +248,7 @@ for event in events["messages"]:
         tts = gTTS(text, lang="en")
         tts.save("output.mp3")
         st.audio("output.mp3", format="audio/mp3")
+
 
 
 
