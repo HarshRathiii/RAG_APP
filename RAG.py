@@ -87,7 +87,7 @@ import streamlit as st
 from langchain_groq import ChatGroq
 from langchain_classic.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import MessagesState, START, END, StateGraph
 from langgraph.graph.message import add_messages
@@ -95,8 +95,12 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from langchain.schema import AIMessage, HumanMessage
 from gtts import gTTS
 
-from langchain.chat_models import init_chat_model
-llm = init_chat_model("openai/gpt-oss-120b", model_provider="groq")
+from langchain_groq import ChatGroq
+
+llm = ChatGroq(
+    model="openai/gpt-oss-120b",  # same model you were using
+    api_key=os.environ["GROQ_API_KEY"],
+)
 
 retriever = vectorstore.as_retriever()
 
@@ -248,6 +252,7 @@ for event in events["messages"]:
         tts = gTTS(text, lang="en")
         tts.save("output.mp3")
         st.audio("output.mp3", format="audio/mp3")
+
 
 
 
