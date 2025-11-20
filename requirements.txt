@@ -1,21 +1,21 @@
-streamlit
+langchain
 ipykernel
-langchain==0.2.11
-langchain-core==0.2.33
-langchain-community==0.2.11
-langchain-text-splitters==0.2.1
-langchain-pinecone==0.1.0
-langchain-groq==0.1.0
-langgraph==0.2.0
-
+python-dotenv
+langchain-groq
+langchain-community
+langgraph
+streamlit
+langchain-text-splitters
+faiss-cpu 
+pypdf
+langchain[huggingface]
 sentence-transformers
 chromadb
-faiss-cpu
-pypdf
-bs4
-
-pinecone-client
-
 gTTS
+bs4
+pinecone
+langchain-pinecone
+langchain-core
+langchain-classic
 
 
