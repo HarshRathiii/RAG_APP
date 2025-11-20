@@ -220,6 +220,8 @@ app = workflow.compile(checkpointer=memory)
 if "thread_id" not in st.session_state:
     st.session_state["thread_id"] = "chat1"  # unique per user/session
 
+events = None
+
 user_input = st.chat_input("Ask a question...")
 if user_input:
     events = app.invoke(
@@ -227,31 +229,32 @@ if user_input:
         config={"configurable": {"thread_id": st.session_state["thread_id"]}}
     )
 
+if events:
+    for event in events["messages"]:
+        if isinstance(event, HumanMessage):
+            # Show user messages
+            text = (event.content or "").strip()
+            if text:
+                st.chat_message("user").write(text)
+    
+        elif isinstance(event, AIMessage):
+            # Skip tool-call messages (no user-facing text)
+            if getattr(event, "tool_calls", None):
+                continue
+    
+            text = (event.content or "").strip()
+            if not text:
+                # Nothing to speak or show
+                continue
+    
+            # Show assistant message
+            st.chat_message("assistant").write(text)
+    
+            # Convert only non-empty text to speech
+            tts = gTTS(text, lang="en")
+            tts.save("output.mp3")
+            st.audio("output.mp3", format="audio/mp3")
 
-for event in events["messages"]:
-    if isinstance(event, HumanMessage):
-        # Show user messages
-        text = (event.content or "").strip()
-        if text:
-            st.chat_message("user").write(text)
-
-    elif isinstance(event, AIMessage):
-        # Skip tool-call messages (no user-facing text)
-        if getattr(event, "tool_calls", None):
-            continue
-
-        text = (event.content or "").strip()
-        if not text:
-            # Nothing to speak or show
-            continue
-
-        # Show assistant message
-        st.chat_message("assistant").write(text)
-
-        # Convert only non-empty text to speech
-        tts = gTTS(text, lang="en")
-        tts.save("output.mp3")
-        st.audio("output.mp3", format="audio/mp3")
 
 
 
