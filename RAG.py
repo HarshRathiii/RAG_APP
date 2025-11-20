@@ -220,8 +220,7 @@ app = workflow.compile(checkpointer=memory)
 if "thread_id" not in st.session_state:
     st.session_state["thread_id"] = "chat1"  # unique per user/session
 
-# Always define events so NameError never happens
-events = None
+
 
 user_input = st.chat_input("Ask a question...")
 if user_input:
@@ -230,9 +229,6 @@ if user_input:
         {"messages": [("user", user_input)]},
         config={"configurable": {"thread_id": st.session_state["thread_id"]}}
     )
-
-# Only loop if we actually have events
-if events is not None:
     for event in events["messages"]:
         # Show user messages
         if isinstance(event, HumanMessage):
@@ -257,6 +253,7 @@ if events is not None:
             tts = gTTS(text, lang="en")
             tts.save("output.mp3")
             st.audio("output.mp3", format="audio/mp3")
+
 
 
 
