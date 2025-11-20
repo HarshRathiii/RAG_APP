@@ -222,6 +222,9 @@ if "thread_id" not in st.session_state:
 
 events = None
 
+
+
+
 user_input = st.chat_input("Ask a question...")
 if user_input:
     # Invoke the agentic RAG app
@@ -253,6 +256,7 @@ if user_input:
             tts = gTTS(text, lang="en")
             tts.save("output.mp3")
             st.audio("output.mp3", format="audio/mp3")
+
 
 
 
