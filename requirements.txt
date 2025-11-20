@@ -1,6 +1,5 @@
 langchain
 ipykernel
-python-dotenv
 langchain-groq
 langchain-community
 langgraph
@@ -16,7 +15,3 @@ bs4
 pinecone
 langchain-pinecone
 langchain-core
-
-
-
-
