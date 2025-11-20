@@ -10,7 +10,7 @@ pc = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
 
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_pinecone import PineconeVectorStore
@@ -248,6 +248,7 @@ for event in events["messages"]:
         tts = gTTS(text, lang="en")
         tts.save("output.mp3")
         st.audio("output.mp3", format="audio/mp3")
+
 
 
 
