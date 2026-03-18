@@ -252,38 +252,48 @@ events = None
 
 
 
+# Initialize chat history in session state if not already
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
 user_input = st.chat_input("Ask a question...")
 if user_input:
-    # Invoke the agentic RAG app
+    # Wrap user input as HumanMessage
+    human_msg = HumanMessage(content=user_input)
+    st.session_state["messages"].append(human_msg)  # Save user message in history
+
+    # Invoke the agent with full chat history
     events = app.invoke(
-        {"messages": [("user", user_input)]},
+        {"messages": st.session_state["messages"]},  # <-- full history
         config={"configurable": {"thread_id": st.session_state["thread_id"]}}
     )
+
+    # Loop over returned messages
     for event in events["messages"]:
-        # Show user messages
         if isinstance(event, HumanMessage):
             text = (event.content or "").strip()
             if text:
                 st.chat_message("user").write(text)
 
-        # Show assistant messages + TTS
         elif isinstance(event, AIMessage):
-            # Skip tool-call messages (no user-facing text)
+            # Skip internal tool-call messages
             if getattr(event, "tool_calls", None):
                 continue
 
             text = (event.content or "").strip()
             if not text:
-                continue  # nothing to show or speak
+                continue
 
             # Show assistant response
             st.chat_message("assistant").write(text)
 
-            # Convert only non-empty text to speech
+            # Convert assistant response to TTS
             tts = gTTS(text, lang="en")
             tts.save("output.mp3")
             st.audio("output.mp3", format="audio/mp3")
 
+            # Append assistant message to chat history
+            st.session_state["messages"].append(event)
 
 
 
