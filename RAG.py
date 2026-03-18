@@ -104,7 +104,7 @@ from langchain_groq import ChatGroq
 # LLM
 # ------------------------
 llm = ChatGroq(
-    model="openai/gpt-oss-120b",
+    model="deepseek-r1-distill-llama-70b",
     api_key=os.environ["GROQ_API_KEY"],
 )
 
