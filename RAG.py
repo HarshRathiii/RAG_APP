@@ -98,7 +98,7 @@ from gtts import gTTS
 from langchain_groq import ChatGroq
 
 llm = ChatGroq(
-    model="openai/gpt-oss-120b",  # same model you were using
+    model="openai/gpt-oss-120b",
     api_key=os.environ["GROQ_API_KEY"],
 )
 
