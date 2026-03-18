@@ -164,6 +164,14 @@ rag_chain = create_retrieval_chain(
     combine_docs_chain=question_answer_chain
 )
 
+# Convert HumanMessage / AIMessage to list of dicts
+chat_history_serializable = [
+    {"role": "user", "content": m.content} if isinstance(m, HumanMessage)
+    else {"role": "assistant", "content": m.content} if isinstance(m, AIMessage)
+    else {"role": "system", "content": m.content}  # just in case
+    for m in messages
+]
+
 from langchain_core.tools import tool
 
 # ------------------------
@@ -175,7 +183,7 @@ def rag_tool(question: str, chat_history: list) -> str:
     response = rag_chain.invoke(
         {
             "input": question,
-            "chat_history": chat_history
+            "chat_history": chat_history_serializable
         }
     )
 
