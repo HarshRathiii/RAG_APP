@@ -164,14 +164,6 @@ rag_chain = create_retrieval_chain(
     combine_docs_chain=question_answer_chain
 )
 
-# Convert HumanMessage / AIMessage to list of dicts
-chat_history_serializable = [
-    {"role": "user", "content": m.content} if isinstance(m, HumanMessage)
-    else {"role": "assistant", "content": m.content} if isinstance(m, AIMessage)
-    else {"role": "system", "content": m.content}  # just in case
-    for m in messages
-]
-
 from langchain_core.tools import tool
 
 # ------------------------
@@ -180,6 +172,14 @@ from langchain_core.tools import tool
 @tool
 def rag_tool(question: str, chat_history: list) -> str:
     """Use the RAG pipeline (PDF + Web vector store) to answer user questions with context awareness."""
+    
+    # Serialize HumanMessage / AIMessage objects to dicts
+    chat_history_serializable = [
+        {"role": "user", "content": m.content} if isinstance(m, HumanMessage)
+        else {"role": "assistant", "content": m.content} if isinstance(m, AIMessage)
+        else {"role": "system", "content": m.content}
+        for m in chat_history
+    ]
     response = rag_chain.invoke(
         {
             "input": question,
