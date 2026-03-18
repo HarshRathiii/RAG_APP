@@ -105,7 +105,7 @@ from langchain_groq import ChatGroq
 # ------------------------
 llm = ChatGroq(
     model="llama-3.3-70b-versatile",
-    api_key=os.environ["GROQ_API_KEY"],
+    api_key=st.secrets['GROQ_API_KEY']
 )
 
 retriever = vectorstore.as_retriever()
