@@ -156,7 +156,9 @@ llm_with_tools = llm.bind_tools(tools)
 # ------------------------
 def agent_node(state: MessagesState):
     messages = state["messages"]
-    result = llm_with_tools.invoke(messages)
+    # Serialize before sending to LLM/tools
+    serialized_messages = serialize_messages(messages)
+    result = llm_with_tools.invoke(serialized_messages)
     
     # Inject history into tool calls
     if hasattr(result, "tool_calls") and result.tool_calls:
@@ -205,6 +207,16 @@ if user_input:
     # Pass messages as BaseMessage objects (do NOT serialize here)
     serialized_msgs = serialize_messages(st.session_state["messages"])
     
+    # Save the user message in session state
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = []
+    
+    human_msg = HumanMessage(content=user_input)
+    st.session_state["messages"].append(human_msg)
+    
+    # Serialize before invoking
+    serialized_msgs = serialize_messages(st.session_state["messages"])
+    
     events = app.invoke(
         {"messages": serialized_msgs},
         config={"configurable": {"thread_id": st.session_state["thread_id"]}}
@@ -215,6 +227,7 @@ if user_input:
             ai_msg = AIMessage(content=event["content"])
             st.session_state["messages"].append(ai_msg)
             st.chat_message("assistant").write(ai_msg.content)
+    
             # TTS
             tts = gTTS(ai_msg.content, lang="en")
             tts.save("output.mp3")
