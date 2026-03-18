@@ -55,7 +55,7 @@ for doc in all_docs:
     chunks = text_splitter.split_text(doc.page_content)
     all_chunks.extend(chunks)
 
-st.write(f"🔹 Total chunks 5: {len(all_chunks)}")
+st.write(f"🔹 Total chunks: {len(all_chunks)}")
 
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2",model_kwargs={"device": "cpu"}) 
 # Create or connect to an index
