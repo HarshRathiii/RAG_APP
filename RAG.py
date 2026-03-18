@@ -171,8 +171,6 @@ from langchain_core.tools import tool
 # ------------------------
 @tool
 def rag_tool(question: str, chat_history: list) -> str:
-    @tool
-def rag_tool(question: str, chat_history: list) -> str:
     response = rag_chain.invoke(
         {
             "input": question,
