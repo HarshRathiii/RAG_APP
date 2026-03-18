@@ -109,86 +109,100 @@ st.success("✅ Embeddings stored in Pinecone")
 # ------------------------
 llm = ChatGroq(
     model="openai/gpt-oss-120b",
-    api_key=os.environ["GROQ_API_KEY"]
+    api_key=os.environ["GROQ_API_KEY"],
+)
+
+retriever = vectorstore.as_retriever()
+
+# ------------------------
+# 1. QUERY REWRITING PROMPT (GENERAL)
+# ------------------------
+contextualize_q_prompt = ChatPromptTemplate.from_messages([
+    ("system", """Rewrite the user's latest question into a clear standalone question 
+based on the chat history. Do NOT answer the question."""),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{input}")
+])
+
+history_aware_retriever = create_history_aware_retriever(
+    llm=llm,
+    retriever=retriever,
+    prompt=contextualize_q_prompt
 )
 
 # ------------------------
-# PROMPTS
+# 2. QA PROMPT (STRICT RAG)
 # ------------------------
+qa_prompt = ChatPromptTemplate.from_messages([
+    ("system", """You are a helpful AI assistant.
 
-# Query rewriting
-CONDENSE_PROMPT = PromptTemplate.from_template("""
-Given the chat history and a follow-up question, rewrite it into a standalone question.
-
-Chat History:
-{chat_history}
-
-Follow-up question:
-{question}
-
-Standalone question:
-""")
-
-# Strict RAG QA
-QA_PROMPT = PromptTemplate.from_template("""
-You are a RAG assistant.
+Answer the user's question using ONLY the provided context.
 
 Rules:
-- Use ONLY the provided context
-- Do NOT use outside knowledge
-- If answer not found, say:
-"I don’t have enough information in the provided documents to answer that."
+- Do NOT use outside knowledge.
+- If the answer is not in the context, say:
+  "I don’t have enough information in the provided documents to answer that."
+- Keep answers clear and concise.
 
 Context:
 {context}
+"""),
+    MessagesPlaceholder("chat_history"),
+    ("human", "{input}")
+])
 
-Question:
-{question}
-
-Answer:
-""")
-
-# ------------------------
-# RAG CHAIN
-# ------------------------
-qa_chain = ConversationalRetrievalChain.from_llm(
+question_answer_chain = create_stuff_documents_chain(
     llm=llm,
-    retriever=vectorstore.as_retriever(),
-    condense_question_prompt=CONDENSE_PROMPT,
-    combine_docs_chain_kwargs={"prompt": QA_PROMPT},
-    return_source_documents=False
+    prompt=qa_prompt
+)
+
+rag_chain = create_retrieval_chain(
+    retriever=history_aware_retriever,
+    combine_docs_chain=question_answer_chain
 )
 
 # ------------------------
-# CHAT HISTORY
+# CHAT HISTORY (SAFE FORMAT)
 # ------------------------
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
+
 # ------------------------
-# CHAT INPUT
+# USER INPUT
 # ------------------------
 user_input = st.chat_input("Ask a question...")
 
 if user_input:
-    result = qa_chain({
-        "question": user_input,
-        "chat_history": st.session_state["chat_history"]
+    # Display user message
+    st.chat_message("user").write(user_input)
+
+    # Convert history to LangChain format
+    history_for_chain = [
+        HumanMessage(content=msg["content"]) if msg["role"] == "user"
+        else AIMessage(content=msg["content"])
+        for msg in st.session_state["messages"]
+    ]
+
+    # Invoke RAG chain
+    response = rag_chain.invoke({
+        "input": user_input,
+        "chat_history": history_for_chain
     })
 
-    answer = result["answer"]
+    answer = response.get("answer", "").strip()
 
-    # Save history
-    st.session_state["chat_history"].append((user_input, answer))
+    # Store messages as DICTS (prevents JSON error)
+    st.session_state["messages"].append({"role": "user", "content": user_input})
+    st.session_state["messages"].append({"role": "assistant", "content": answer})
 
-# ------------------------
-# DISPLAY CHAT
-# ------------------------
-for q, a in st.session_state["chat_history"]:
-    st.chat_message("user").write(q)
-    st.chat_message("assistant").write(a)
+    # Display assistant response
+    if answer:
+        st.chat_message("assistant").write(answer)
 
-    if a.strip():
-        tts = gTTS(a, lang="en")
+        # TTS safe
+        tts = gTTS(answer, lang="en")
         tts.save("output.mp3")
-        st.audio("output.mp3")
+        st.audio("output.mp3", format="audio/mp3")
