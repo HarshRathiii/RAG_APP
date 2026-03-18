@@ -258,42 +258,42 @@ if "messages" not in st.session_state:
 
 user_input = st.chat_input("Ask a question...")
 if user_input:
-    # Wrap user input as HumanMessage
+    # Wrap user input as HumanMessage and store in session
     human_msg = HumanMessage(content=user_input)
-    st.session_state["messages"].append(human_msg)  # Save user message in history
+    st.session_state["messages"].append(human_msg)
 
-    # Invoke the agent with full chat history
+    # Serialize messages to dicts before sending to app
+    serialized_messages = [
+        {"role": "user", "content": m.content} if isinstance(m, HumanMessage)
+        else {"role": "assistant", "content": m.content} if isinstance(m, AIMessage)
+        else {"role": "system", "content": m.content}
+        for m in st.session_state["messages"]
+    ]
+
+    # Invoke the agentic RAG app
     events = app.invoke(
-        {"messages": st.session_state["messages"]},  # <-- full history
+        {"messages": serialized_messages},  # <-- now JSON serializable
         config={"configurable": {"thread_id": st.session_state["thread_id"]}}
     )
 
-    # Loop over returned messages
+    # Process returned messages
     for event in events["messages"]:
-        if isinstance(event, HumanMessage):
-            text = (event.content or "").strip()
-            if text:
-                st.chat_message("user").write(text)
+        role = event.get("role")
+        text = (event.get("content") or "").strip()
+        if not text:
+            continue
 
-        elif isinstance(event, AIMessage):
-            # Skip internal tool-call messages
-            if getattr(event, "tool_calls", None):
-                continue
-
-            text = (event.content or "").strip()
-            if not text:
-                continue
-
-            # Show assistant response
+        if role == "user":
+            st.chat_message("user").write(text)
+        elif role == "assistant":
             st.chat_message("assistant").write(text)
-
             # Convert assistant response to TTS
             tts = gTTS(text, lang="en")
             tts.save("output.mp3")
             st.audio("output.mp3", format="audio/mp3")
 
-            # Append assistant message to chat history
-            st.session_state["messages"].append(event)
+            # Append assistant message to session history
+            st.session_state["messages"].append(AIMessage(content=text))
 
 
 
