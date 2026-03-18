@@ -104,7 +104,7 @@ from langchain_groq import ChatGroq
 # LLM
 # ------------------------
 llm = ChatGroq(
-    model="llama3-70b-8192",
+    model="llama-3.3-70b-versatile",
     api_key=os.environ["GROQ_API_KEY"],
 )
 
