@@ -184,7 +184,7 @@ def serialize_messages(messages):
         {"role": "user", "content": m.content} if isinstance(m, HumanMessage)
         else {"role": "assistant", "content": m.content} if isinstance(m, AIMessage)
         else {"role": "system", "content": m.content}
-        for m in chat_history ]
+        for m in messages ]
 
 # ------------------------
 # 9. Session state setup
