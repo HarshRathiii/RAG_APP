@@ -100,7 +100,10 @@ contextualize_q_prompt = ChatPromptTemplate.from_messages([
     ("system", """You are a query rewriting assistant for a Retrieval-Augmented Generation (RAG) system.
 Convert user's latest question into a clear, standalone query for document retrieval.
 Use chat history to understand context. Do NOT answer here.
-Output only the rewritten query."""),
+Output only the rewritten query.
+Context:
+{context}
+"""),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}")
 ])
