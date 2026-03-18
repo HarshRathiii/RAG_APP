@@ -171,7 +171,7 @@ from langchain_core.tools import tool
 # ------------------------
 @tool
 def rag_tool(question: str, chat_history: list) -> str:
- """Use the RAG pipeline (PDF + Web vector store) to answer user questions with context awareness."""
+    """Use the RAG pipeline (PDF + Web vector store) to answer user questions with context awareness."""
     response = rag_chain.invoke(
         {
             "input": question,
