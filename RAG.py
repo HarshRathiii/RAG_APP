@@ -252,57 +252,34 @@ events = None
 
 
 
-# Initialize chat history in session state if not already
+if "thread_id" not in st.session_state:
+    st.session_state["thread_id"] = "chat1"
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
+# ------------------------
+# 10. Streamlit chat loop
+# ------------------------
 user_input = st.chat_input("Ask a question...")
 if user_input:
-    # Wrap user input as HumanMessage and store in session
     human_msg = HumanMessage(content=user_input)
     st.session_state["messages"].append(human_msg)
 
-    # Serialize messages to dicts before sending to app
-    serialized_messages = [
-        {"role": "user", "content": m.content} if isinstance(m, HumanMessage)
-        else {"role": "assistant", "content": m.content} if isinstance(m, AIMessage)
-        else {"role": "system", "content": m.content}
-        for m in st.session_state["messages"]
-    ]
-
-    # Invoke the agentic RAG app
+    # Pass messages as BaseMessage objects (do NOT serialize here)
     events = app.invoke(
-        {"messages": serialized_messages},  # <-- now JSON serializable
+        {"messages": st.session_state["messages"]},
         config={"configurable": {"thread_id": st.session_state["thread_id"]}}
     )
 
-    # Process returned messages
     for event in events["messages"]:
-        role = event.get("role")
-        text = (event.get("content") or "").strip()
-        if not text:
-            continue
+        if isinstance(event, HumanMessage):
+            st.chat_message("user").write(event.content)
+        elif isinstance(event, AIMessage):
+            st.chat_message("assistant").write(event.content)
+            st.session_state["messages"].append(event)
 
-        if role == "user":
-            st.chat_message("user").write(text)
-        elif role == "assistant":
-            st.chat_message("assistant").write(text)
-            # Convert assistant response to TTS
-            tts = gTTS(text, lang="en")
-            tts.save("output.mp3")
-            st.audio("output.mp3", format="audio/mp3")
-
-            # Append assistant message to session history
-            st.session_state["messages"].append(AIMessage(content=text))
-
-
-
-
-
-
-
-
-
-
-
-
+            # TTS
+            if event.content.strip():
+                tts = gTTS(event.content, lang="en")
+                tts.save("output.mp3")
+                st.audio("output.mp3", format="audio/mp3")
