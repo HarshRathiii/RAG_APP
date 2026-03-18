@@ -129,7 +129,7 @@ Output: "What is Virat Kohli's age?"
 """),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}")
-]
+])
 
 history_aware_retriever = create_history_aware_retriever(
     llm=llm,
