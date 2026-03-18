@@ -1,49 +1,36 @@
 import streamlit as st
 import os
 
-# ------------------------
-# ENV VARIABLES
-# ------------------------
 os.environ['GROQ_API_KEY'] = st.secrets['GROQ_API_KEY']
 os.environ['LANGSMITH_API_KEY'] = st.secrets['LANGSMITH_API_KEY']
 os.environ['LANGSMITH_PROJECT'] = st.secrets['LANGSMITH_PROJECT']
 os.environ['LANGSMITH_TRACING'] = "true"
-
-# ------------------------
-# IMPORTS
-# ------------------------
 from pinecone import Pinecone, ServerlessSpec
+pc = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
+
+import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader, WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_pinecone import PineconeVectorStore
+from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_groq import ChatGroq
+from langchain_pinecone import PineconeVectorStore
 
-from langchain.chains import ConversationalRetrievalChain
-from langchain.prompts import PromptTemplate
 
-from gtts import gTTS
+st.set_page_config(page_title="PDF & Webpage Q&A", layout="centered")
+st.title("TUTOR")
 
-# ------------------------
-# UI
-# ------------------------
-st.set_page_config(page_title="RAG Tutor", layout="centered")
-st.title("📄 RAG Tutor (PDF + Web)")
+# Step 1: Upload multiple PDFs
 
-# ------------------------
-# INPUTS
-# ------------------------
 pdf_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
+
+# Step 2: Enter multiple URLs
 
 urls_text = st.text_area("Enter webpage URLs (one per line)")
 urls = [url.strip() for url in urls_text.split("\n") if url.strip()]
 
-# ------------------------
-# LOAD DOCUMENTS
-# ------------------------
 all_docs = []
 
-# PDFs
+# Load PDFs
 for pdf_file in pdf_files:
     with open(f"temp_{pdf_file.name}", "wb") as f:
         f.write(pdf_file.getvalue())
@@ -51,58 +38,67 @@ for pdf_file in pdf_files:
     docs = loader.load()
     all_docs.extend(docs)
 
-# URLs
+# Load webpages
 for url in urls:
     loader = WebBaseLoader(url)
     docs = loader.load()
     all_docs.extend(docs)
 
-st.write(f"📄 Documents loaded: {len(all_docs)}")
+st.write(f" Total documents loaded: {len(all_docs)}")
 
-# ------------------------
-# SPLIT
-# ------------------------
+# Step 3: Split into chunks
+
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=500,
-    chunk_overlap=50
+    chunk_overlap=50,
+    length_function=len
 )
-
 all_chunks = []
 for doc in all_docs:
     chunks = text_splitter.split_text(doc.page_content)
     all_chunks.extend(chunks)
 
-st.write(f"🧩 Total chunks: {len(all_chunks)}")
+st.write(f"Total chunks 5: {len(all_chunks)}")
 
-# ------------------------
-# EMBEDDINGS + PINECONE
-# ------------------------
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
-    model_kwargs={"device": "cpu"}
-)
-
-pc = Pinecone(api_key=st.secrets["PINECONE_API_KEY"])
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2",model_kwargs={"device": "cpu"}) 
+# Create or connect to an index
 index_name = "rag-app-index"
-
 if index_name not in pc.list_indexes().names():
     pc.create_index(
         name=index_name,
-        dimension=384,
+        dimension=384,  # embedding size for MiniLM-L6-v2
         metric="cosine",
-        spec=ServerlessSpec(
-            cloud="aws",
-            region=st.secrets["PINECONE_ENVIRONMENT"]
-        )
+        spec=ServerlessSpec(cloud="aws", region=st.secrets["PINECONE_ENVIRONMENT"])
     )
 
+# Use the index
+index = pc.Index(index_name)
+
+# Store your embeddings in Pinecone
 vectorstore = PineconeVectorStore.from_texts(
     texts=all_chunks,
     embedding=embeddings,
     index_name=index_name
 )
 
-st.success("✅ Embeddings stored in Pinecone")
+st.success("All chunks converted into embeddings and stored in Pinecone")
+
+
+
+import os
+import streamlit as st
+from langchain_groq import ChatGroq
+from langchain_classic.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain_classic.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import MessagesState, START, END, StateGraph
+from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode, tools_condition
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, BaseMessage
+from gtts import gTTS
+
+from langchain_groq import ChatGroq
 
 # ------------------------
 # LLM
