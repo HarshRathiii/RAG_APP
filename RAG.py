@@ -152,7 +152,6 @@ Context:
 """),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}"),
-    ("system", "Context:\n{context}")
 ])
 
 question_answer_chain = create_stuff_documents_chain(
@@ -171,15 +170,16 @@ from langchain_core.tools import tool
 # 5. Wrap RAG as a TOOL
 # ------------------------
 @tool
-def rag_tool(question: str) -> str:
-    """Use the RAG pipeline (PDF + Web vector store) to answer a question."""
+def rag_tool(question: str, chat_history: list) -> str:
+    @tool
+def rag_tool(question: str, chat_history: list) -> str:
     response = rag_chain.invoke(
         {
             "input": question,
-            # you can later pass history if you want:
-            "chat_history": []
+            "chat_history": chat_history
         }
     )
+
     return response["answer"]
 
 tools = [rag_tool]
@@ -197,8 +197,15 @@ def agent_node(state: MessagesState):
     - respond directly, or
     - call a tool like rag_tool and keep the answer concise
     """
+    
     messages = state["messages"]
     result = llm_with_tools.invoke(messages)
+    
+    #Inject history into tool calls
+    if isinstance(result, AIMessage) and result.tool_calls:
+        for tool_call in result.tool_calls:
+            tool_call["args"]["chat_history"] = messages
+            
     # result can be an AIMessage or a tool call
     return {"messages": [result]}
 
