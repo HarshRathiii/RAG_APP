@@ -131,7 +131,7 @@ Context:
 {context}
 """),
     MessagesPlaceholder("chat_history"),
-    ("human", "{context}"),
+    ("human", "{input}"),
 ])
 
 question_answer_chain = create_stuff_documents_chain(
