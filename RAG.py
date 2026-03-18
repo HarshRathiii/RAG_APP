@@ -114,11 +114,22 @@ retriever = vectorstore.as_retriever()
 # 1. QUERY REWRITING PROMPT (GENERAL)
 # ------------------------
 contextualize_q_prompt = ChatPromptTemplate.from_messages([
-    ("system", """Rewrite the user's latest question into a clear standalone question 
-based on the chat history. Do NOT answer the question."""),
+    ("system", """You are an assistant that rewrites follow-up questions into fully self-contained questions.
+
+Your job:
+- Replace pronouns like "he", "she", "it", "they", "his", "that", etc. with the correct subject from chat history.
+- Make the question complete and clear.
+- Preserve the original meaning.
+- Do NOT answer the question.
+
+Example:
+Chat History: "Virat Kohli is a cricketer."
+Follow-up: "What is his age?"
+Output: "What is Virat Kohli's age?"
+"""),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}")
-])
+]
 
 history_aware_retriever = create_history_aware_retriever(
     llm=llm,
