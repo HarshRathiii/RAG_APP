@@ -17,7 +17,7 @@ from langchain_pinecone import PineconeVectorStore
 
 
 st.set_page_config(page_title="PDF & Webpage Q&A", layout="centered")
-st.title("📄🔗 Multi PDF & Webpage Vectorizer")
+st.title("RAG Application")
 
 # Step 1: Upload multiple PDFs
 pdf_files = st.file_uploader("Upload PDF files", type=["pdf"], accept_multiple_files=True)
