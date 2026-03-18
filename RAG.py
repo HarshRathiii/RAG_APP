@@ -179,6 +179,13 @@ workflow.add_edge("tools", "agent")
 memory = MemorySaver()
 app = workflow.compile(checkpointer=memory)
 
+def serialize_messages(messages):
+    return [
+        {"role": "user", "content": m.content} if isinstance(m, HumanMessage)
+        else {"role": "assistant", "content": m.content} if isinstance(m, AIMessage)
+        else {"role": "system", "content": m.content}
+        for m in messages
+
 # ------------------------
 # 9. Session state setup
 # ------------------------
@@ -196,20 +203,19 @@ if user_input:
     st.session_state["messages"].append(human_msg)
 
     # Pass messages as BaseMessage objects (do NOT serialize here)
+    serialized_msgs = serialize_messages(st.session_state["messages"])
+    
     events = app.invoke(
-        {"messages": st.session_state["messages"]},
+        {"messages": serialized_msgs},
         config={"configurable": {"thread_id": st.session_state["thread_id"]}}
     )
 
     for event in events["messages"]:
-        if isinstance(event, HumanMessage):
-            st.chat_message("user").write(event.content)
-        elif isinstance(event, AIMessage):
-            st.chat_message("assistant").write(event.content)
-            st.session_state["messages"].append(event)
-
+        if event["role"] == "assistant":
+            ai_msg = AIMessage(content=event["content"])
+            st.session_state["messages"].append(ai_msg)
+            st.chat_message("assistant").write(ai_msg.content)
             # TTS
-            if event.content.strip():
-                tts = gTTS(event.content, lang="en")
-                tts.save("output.mp3")
-                st.audio("output.mp3", format="audio/mp3")
+            tts = gTTS(ai_msg.content, lang="en")
+            tts.save("output.mp3")
+            st.audio("output.mp3", format="audio/mp3")
