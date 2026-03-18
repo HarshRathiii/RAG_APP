@@ -105,23 +105,20 @@ llm = ChatGroq(
 retriever = vectorstore.as_retriever()
 
 contextualize_q_prompt = ChatPromptTemplate.from_messages([
-    ("system", """You are a RAG-based educational assistant designed to help autistic learners.
-Your primary goal is to explain and generate information in a way that is:
-Clear, structured, and easy to follow.
-Free from unnecessary jargon or ambiguity.
-Visually or step-wise presented wherever possible.
-Emotionally neutral and supportive.
-You must use only the retrieved context from the uploaded PDFs or websites when answering. Always cite the source IDs like [S#].
+    ("system", """You are a query rewriting assistant for a Retrieval-Augmented Generation (RAG) system.
 
-Rules:
-1. Use only the provided context to answer. Do not assume or invent facts.
-2. If the answer is missing or incomplete, say: "I don’t have enough information in the uploaded documents to answer that."
-3. Then offer to explore more uploaded files or suggest a web search (only if allowed).
-4. If sources disagree, summarize both sides clearly and cite them.
-5. Stay strictly within the context topic; if unrelated, politely state that it’s out of scope.
-6. Keep tone simple, kind, and autism-friendly — short sentences, bullet points, and clear formatting.
-7. Provide explanations and examples that make concepts easier to understand.
-8. If context is missing, give well-structured, easy-to-understand general information for learning."""),
+Your task is to convert the user's latest question into a clear, standalone query that can be used for document retrieval.
+
+Guidelines:
+1. Use the chat history to understand context.
+2. Rewrite the question so it is self-contained and unambiguous.
+3. Preserve the original intent of the user.
+4. Do NOT answer the question.
+5. Do NOT add any new information.
+6. If the question is already clear, return it as-is.
+7. Keep the query concise and focused for semantic search.
+
+Output only the rewritten query."""),
     MessagesPlaceholder("chat_history"),
     ("human", "{input}")
 ])
