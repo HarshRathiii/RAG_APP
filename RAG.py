@@ -42,7 +42,7 @@ for url in urls:
     docs = loader.load()
     all_docs.extend(docs)
 
-st.write(f"🔹 Total documents loaded: {len(all_docs)}")
+st.write(f"Total documents loaded: {len(all_docs)}")
 
 # Step 3: Split into chunks
 text_splitter = RecursiveCharacterTextSplitter(
@@ -55,7 +55,7 @@ for doc in all_docs:
     chunks = text_splitter.split_text(doc.page_content)
     all_chunks.extend(chunks)
 
-st.write(f"🔹 Total chunks: {len(all_chunks)}")
+st.write(f"Total chunks: {len(all_chunks)}")
 
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2",model_kwargs={"device": "cpu"}) 
 # Create or connect to an index
@@ -78,7 +78,7 @@ vectorstore = PineconeVectorStore.from_texts(
     index_name=index_name
 )
 
-st.success("✅ All chunks converted into embeddings and stored in Pinecone")
+st.success("All chunks converted into embeddings and stored in Pinecone")
 
 
 
